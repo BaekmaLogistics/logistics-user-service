@@ -7,6 +7,8 @@ import com.sparta.logistics.application.command.usecase.CreatePendingUserUseCase
 import com.sparta.logistics.domain.entity.DeliveryManager;
 import com.sparta.logistics.domain.entity.User;
 import com.sparta.logistics.domain.model.DeliveryManagerType;
+import com.sparta.logistics.domain.model.RequestedDeliveryType;
+import com.sparta.logistics.domain.model.RequestedRole;
 import com.sparta.logistics.domain.model.Role;
 import com.sparta.logistics.domain.repository.DeliveryManagerRepository;
 import com.sparta.logistics.domain.repository.UserRepository;
@@ -34,6 +36,10 @@ public class UserCommandService implements
 
   private final AuthServiceClient authServiceClient;
 
+
+  private static final long MAX_DELIVERY_MANAGER_COUNT = 10L;
+
+
   @Override
   public void createPendingUser(CreatePendingUserCommand command) {
 
@@ -60,48 +66,168 @@ public class UserCommandService implements
   @Override
   public void approveUser(ApproveUserCommand command) {
 
-    User user = userRepository.findById(command.userId())
+    User targetUser = userRepository.findById(command.userId())
         .orElseThrow(() ->
             new ApiException(ErrorResponseCode.USER_NOT_FOUND));
 
-    // PENDING 상태 확인 및 Role변경
-    user.approve();
+    // 승인 권한 검사
+    validateApprovalAuthority(command, targetUser);
+
+    DeliveryManager deliveryManager = null;
 
     // 배송 관리자의 경우 DeliveryManager 생성
-    if (user.getRole() == Role.DELIVERY_MANAGER) {
-      createDeliveryManager(user);
+    if (targetUser.getRequestedRole() == RequestedRole.DELIVERY_MANAGER) {
+      deliveryManager = createDeliveryManager(targetUser);
+    }
+
+    // PENDING 상태 확인 및 Role변경
+    targetUser.approve();
+
+    if (deliveryManager != null) {
+      deliveryManagerRepository.save(deliveryManager);
     }
 
     authServiceClient.activateAccount(
-        user.getId(),
-        new ActivateAuthAccountRequest(user.getRole().name())
+        targetUser.getId(),
+        new ActivateAuthAccountRequest(targetUser.getRole().name())
     );
   }
 
-  // DeliveryManager 생성
-  private void createDeliveryManager(User user) {
-    if (deliveryManagerRepository.existsByUserId(user.getId())) {
+
+  // 승인 권한 검사
+  private void validateApprovalAuthority(ApproveUserCommand command, User targetUser) {
+
+    // 마스터 관리자는 모든 가입 신청 승인 가능
+    if (command.reviewerRole() == Role.MASTER) {
       return;
+    }
+
+    // 허브 관리자가 아니면 가입 신청 승인 불가
+    if (command.reviewerRole() != Role.HUB_MANAGER) {
+      throw new ApiException(ErrorResponseCode.USER_APPROVAL_FORBIDDEN);
+    }
+
+    // 허브 배송 담당자는 특정 허브 소속이 아니므로 HUB_MANAGER가 승일할 수 없음
+    if (targetUser.getRequestedRole()
+        == RequestedRole.DELIVERY_MANAGER
+        && targetUser.getRequestedDeliveryType()
+        == RequestedDeliveryType.HUB_DELIVERY) {
+      throw new ApiException(ErrorResponseCode.USER_APPROVAL_FORBIDDEN);
+    }
+
+    User reviewer = userRepository.findById(command.reviewerId())
+        .orElseThrow(() ->
+            new ApiException(ErrorResponseCode.USER_NOT_FOUND));
+
+    UUID reviewerHubId = reviewer.getHubId();
+    UUID targetHubId = targetUser.getHubId();
+
+    // 허브 관리자가 승인할 권한이 있는지
+    if (reviewer.getRole() != Role.HUB_MANAGER
+        || reviewerHubId == null
+        || targetHubId == null
+        || !targetHubId.equals(reviewerHubId)
+    ) {
+      throw new ApiException(ErrorResponseCode.USER_APPROVAL_FORBIDDEN);
+    }
+  }
+
+  // 배송 담당자 생성
+  private DeliveryManager createDeliveryManager(User targetUser) {
+
+    // 배송 담당자가 존재하는지
+    if (deliveryManagerRepository.existsById(targetUser.getId())) {
+      throw new ApiException(
+          ErrorResponseCode.DUPLICATE_DELIVERY_MANAGER
+      );
     }
 
     // 신청 타입
     DeliveryManagerType deliveryManagerType = DeliveryManagerType.from(
-        user.getRequestedDeliveryType()
+        targetUser.getRequestedDeliveryType()
     );
 
-    UUID hubId = user.getHubId();
+    UUID hubId = targetUser.getHubId();
 
-    // order 계산
-    int deliveryOrder = calculateNextDeliveryOrder(deliveryManagerType, hubId);
+    // 배송 담당자 타입별 배송 담당자 생성
+    return switch (deliveryManagerType) {
+      case HUB_DELIVERY -> createHubDeliveryManager(targetUser.getId());
+      case COMPANY_DELIVERY -> createCompanyDeliveryManager(targetUser.getId(), hubId);
+    };
+  }
 
-    DeliveryManager deliveryManager = DeliveryManager.create(
-        user.getId(),
-        hubId,
-        deliveryManagerType,
+  // 허브 배송 담당자 생성
+  private DeliveryManager createHubDeliveryManager(UUID id) {
+
+    // 삭제를 제외한 인원
+    long activeCount =
+        deliveryManagerRepository
+            .countByDeliveryManagerTypeAndDeletedAtIsNull(
+                DeliveryManagerType.HUB_DELIVERY
+            );
+
+    // 배송 담당 인원 확인
+    validateCapacity(activeCount);
+
+    // 순번 계산
+    int deliveryOrder = calculateNextDeliveryOrder(
+        DeliveryManagerType.HUB_DELIVERY,
+        null
+    );
+
+    // 생성
+    return DeliveryManager.create(
+        id,
+        null,
+        DeliveryManagerType.HUB_DELIVERY,
         deliveryOrder
     );
+  }
 
-    deliveryManagerRepository.save(deliveryManager);
+  // 업체 배송 담당자 생성
+  private DeliveryManager createCompanyDeliveryManager(UUID id, UUID hubId) {
+
+
+    if (hubId == null) {
+      throw new ApiException(
+          ErrorResponseCode.DELIVERY_MANAGER_HUB_REQUIRED
+      );
+    }
+
+    // 실제로 존재하는 hubId인지 확인해야 함
+
+
+    long activeCount =
+        deliveryManagerRepository
+            .countByDeliveryManagerTypeAndHubIdAndDeletedAtIsNull(
+                DeliveryManagerType.COMPANY_DELIVERY,
+                hubId
+            );
+
+    // 배송 담당 인원 확인
+    validateCapacity(activeCount);
+
+    int deliveryOrder =
+        calculateNextDeliveryOrder(
+            DeliveryManagerType.COMPANY_DELIVERY,
+            hubId
+        );
+
+    return DeliveryManager.create(
+        id,
+        hubId,
+        DeliveryManagerType.COMPANY_DELIVERY,
+        deliveryOrder
+    );
+  }
+
+
+  private void validateCapacity(long activeCount) {
+    if (activeCount >= MAX_DELIVERY_MANAGER_COUNT) {
+      throw new ApiException(
+          ErrorResponseCode.DELIVERY_MANAGER_LIMIT_EXCEEDED
+      );
+    }
   }
 
   // 순번 계산

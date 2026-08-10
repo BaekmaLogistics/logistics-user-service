@@ -1,6 +1,7 @@
 package com.sparta.logistics.domain.entity;
 
 import com.sparta.logistics.domain.model.DeliveryManagerType;
+import com.sparta.logistics.infrastructure.persistence.jpa.entity.BaseAssignedIdUpdatableEntity;
 import com.sparta.logistics.infrastructure.persistence.jpa.entity.BaseUpdatableEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -13,10 +14,7 @@ import java.util.UUID;
 @Getter
 @Table(name = "p_delivery_managers")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class DeliveryManager extends BaseUpdatableEntity {
-
-  @Column(unique = true, nullable = false)
-  private UUID userId;
+public class DeliveryManager extends BaseAssignedIdUpdatableEntity {
 
   @Column(name = "hub_id")
   private UUID hubId;
@@ -29,12 +27,12 @@ public class DeliveryManager extends BaseUpdatableEntity {
   private Integer deliveryOrder;
 
   private DeliveryManager(
-      UUID userId,
+      UUID id,
       UUID hubId,
       DeliveryManagerType deliveryManagerType,
       Integer deliveryOrder
   ) {
-    this.userId = userId;
+    this.id = id;
     this.hubId = hubId;
     this.deliveryManagerType = deliveryManagerType;
     this.deliveryOrder = deliveryOrder;
