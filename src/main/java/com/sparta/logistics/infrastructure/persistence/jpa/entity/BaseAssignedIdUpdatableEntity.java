@@ -47,11 +47,6 @@ public abstract class BaseAssignedIdUpdatableEntity {
   @Column(name = "deleted_by")
   private UUID deletedBy;
 
-
-  protected BaseAssignedIdUpdatableEntity(UUID id) {
-    this.id = id;
-  }
-
   public void softDelete(UUID deletedBy) {
     this.deletedAt = Instant.now();
     this.deletedBy = deletedBy;

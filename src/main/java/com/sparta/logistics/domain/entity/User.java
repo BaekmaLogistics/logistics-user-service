@@ -1,5 +1,7 @@
 package com.sparta.logistics.domain.entity;
 
+import com.sparta.logistics.common.code.ErrorResponseCode;
+import com.sparta.logistics.common.exception.ApiException;
 import com.sparta.logistics.domain.model.ApprovalStatus;
 import com.sparta.logistics.domain.model.RequestedDeliveryType;
 import com.sparta.logistics.domain.model.RequestedRole;
@@ -89,7 +91,22 @@ public class User extends BaseAssignedIdUpdatableEntity {
             hubId,
             companyId
     );
-
   }
 
+  public void approve() {
+
+    //승인, 거절이 완료되었는지 확인
+    if (this.approvalStatus != ApprovalStatus.PENDING) {
+      throw new ApiException(ErrorResponseCode.ALREADY_REVIEWED_USER);
+    }
+
+    // null -> role 변경
+    this.role = switch (this.requestedRole) {
+      case HUB_MANAGER -> Role.HUB_MANAGER;
+      case DELIVERY_MANAGER -> Role.DELIVERY_MANAGER;
+      case SUPPLIER_MANAGER ->  Role.SUPPLIER_MANAGER;
+    };
+
+    this.approvalStatus = ApprovalStatus.APPROVED;
+  }
 }
