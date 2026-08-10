@@ -4,7 +4,7 @@ import com.sparta.logistics.domain.model.ApprovalStatus;
 import com.sparta.logistics.domain.model.RequestedDeliveryType;
 import com.sparta.logistics.domain.model.RequestedRole;
 import com.sparta.logistics.domain.model.Role;
-import com.sparta.logistics.infrastructure.persistence.jpa.entity.BaseUpdatableEntity;
+import com.sparta.logistics.infrastructure.persistence.jpa.entity.BaseAssignedIdUpdatableEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -16,11 +16,8 @@ import java.util.UUID;
 @Getter
 @Table(name = "p_users")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class User {
+public class User extends BaseAssignedIdUpdatableEntity {
 
-  @Id
-  @Column(columnDefinition = "uuid", updatable = false)
-  private UUID id;
 
   @Column(nullable = false, length = 50)
   private String name;
