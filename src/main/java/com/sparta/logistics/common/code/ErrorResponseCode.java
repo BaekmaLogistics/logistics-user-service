@@ -12,7 +12,9 @@ public enum ErrorResponseCode implements ApiResponseCode {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "COMMON_0002","유효하지 않은 요청입니다."),
     FEIGN_CLIENT_ERROR(HttpStatus.BAD_GATEWAY, "COMMON_0003", "Feign 통신 중 오류가 발생했습니다."),
 
-    DUPLICATE_USER(HttpStatus.CONFLICT, "USER_0001", "이미 생성된 사용자입니다.");
+    DUPLICATE_USER(HttpStatus.CONFLICT, "USER_0001", "이미 생성된 사용자입니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_0002", "사용자를 찾을 수 없습니다."),
+    ALREADY_REVIEWED_USER(HttpStatus.CONFLICT, "USER_0003", "이미 완료된 승인입니다.");
 
     private final HttpStatus status;
     private final String errorCode;
