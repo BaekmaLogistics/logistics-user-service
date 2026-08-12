@@ -1,7 +1,6 @@
 package com.sparta.logistics.domain.repository;
 
 import com.sparta.logistics.application.query.dto.DeliveryManagerItem;
-import com.sparta.logistics.application.query.dto.DeliveryManagerPageResponse;
 import com.sparta.logistics.domain.model.DeliveryManagerType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -3,7 +3,6 @@ package com.sparta.logistics.presentation.command.request;
 import com.sparta.logistics.application.command.dto.RejectUserCommand;
 import com.sparta.logistics.domain.model.Role;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
