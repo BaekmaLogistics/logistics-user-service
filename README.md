@@ -1,4 +1,4 @@
-# 📦 [User Service]
+# 📦 User Service
 
 > Baekma Logistics의 사용자 가입 심사 및 배송 담당자 관리를 담당하는 Microservice입니다.
 
