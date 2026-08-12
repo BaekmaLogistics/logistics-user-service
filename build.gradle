@@ -8,6 +8,7 @@ group = 'com.sparta'
 version = '0.0.1-SNAPSHOT'
 description = 'user-service'
 
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
@@ -43,6 +44,7 @@ dependencies {
 
     //Micrometer Tracing
     implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+    implementation 'io.github.openfeign:feign-micrometer'
 
     //Zipkin
     implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
