@@ -1,68 +1,83 @@
-# Logistics Service Template
+# 📦 [User Service]
 
-스파르타 물류 시스템(Sparta Logistics System) 마이크로서비스 작성을 위한 공통 Spring Boot 템플릿 레포지토리입니다.
-
----
-
-## 🛠 주요 기술 스택 & 포함된 설정
-- **Java**: 17
-- **Framework**: Spring Boot 3.5.14
-- **Database**: PostgreSQL (Spring Data JPA)
-- **API Docs**: Springdoc OpenAPI (Swagger UI)
-- **Testing**: JUnit 5, Testcontainers
+> Baekma Logistics의 사용자 가입 심사 및 배송 담당자 관리를 담당하는 Microservice입니다.
 
 ---
 
-## 📁 프로젝트 패키지 구조
-```text
-src/main/java/com/sparta/logistics
-├── application/       # 비즈니스 유스케이스 / 서비스 로직
-├── domain/            # 도메인 엔티티, 리포지토리 인터페이스
-├── infrastructure/    # DB, 외부 API 연동 구현체
-└── presentation/      # Controller, DTO 및 공통 예외/응답 처리
-    └── common/
-        ├── dto/       # 공통 응답 포맷 (GeneralResponse, ErrorResponse 등)
-        └── exception/ # 공통 예외 핸들러 (GlobalExceptionHandler, ApiException)
-```
+## 📌 담당 기능
+
+* 회원가입 승인 대기 사용자 생성
+* 역할과 소속 허브를 기준으로 한 회원가입 승인·거절
+* 승인된 사용자 일괄 조회 및 사용자 접근 정보 조회
+* 배송 담당자 승인 시 배송 담당자 정보와 배송 순번 생성
+* 배송 유형과 허브를 기준으로 한 배송 담당자 페이징 조회
+* 가입 심사 결과를 Auth Service의 인증 계정에 반영
 
 ---
 
-## ⚙️ 서비스 복사 후 설정 변경 가이드 (필수)
+## 🛠 Tech Stack
 
-새로운 마이크로서비스 생성 시 아래 파일들의 서비스/아티팩트 명칭을 각 서비스에 맞춰 수정해 주세요.
-
-### 1. `build.gradle`
-- `description`: 서비스 설명/이름 수정 (예: `description = 'user-service'`)
-- (필요시) `group` 설정 수정
-
-### 2. `settings.gradle`
-- `rootProject.name`: 프로젝트/아티팩트 이름 수정 (예: `rootProject.name = 'user-service'`)
-
-### 3. `src/main/resources/application.yml`
-- `spring.application.name`: 각 서비스의 애플리케이션 이름으로 수정 (예: `spring.application.name: user-service`)
-- `spring.datasource`: 데이터베이스 접속 환경 변수 설정 (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`)
-
-### 4. 에러 코드 (`ErrorResponseCode.java`) 컨벤션 적용
-- `src/main/java/com/sparta/logistics/presentation/common/dto/response/ErrorResponseCode.java`
-- 각 서비스에서 발생하는 예외를 구분하기 위해 서비스 접두사(Prefix) 형태의 에러 코드를 추가 정의합니다.
-  - 예시:
-    - 공통: `COMMON_0001` (서버 오류), `COMMON_0002` (잘못된 요청)
-    - 회원 서비스: `USER_0001` (사용자 없음), `USER_0002` (중복된 이메일)
-    - 허브 서비스: `HUB_0001` (허브 미존재)
-
-### 5. 패키지 및 메인 클래스 (선택)
-- 기본 패키지(`com.sparta.logistics`) 및 메인 실행 클래스(`LogisticsApplication.java`)를 서비스 역할에 맞게 변경/리팩토링하여 사용합니다.
+* **Language** : Java 17
+* **Framework** : Spring Boot
+* **Database** : PostgreSQL
+* **Cache** : Redis
+* **Communication** : OpenFeign
 
 ---
 
-## 🚀 실행 및 API 문서
+## ✨ 주요 구현 내용
 
-### 빌드 및 실행
+### 1. 가입 승인 대기 사용자 관리
+* Auth Service의 내부 요청을 받아 동일한 사용자 ID로 User를 생성했습니다.
+* 신청 역할, 배송 담당자 유형, 허브 및 업체 ID를 저장하고 최초 승인 상태를 PENDING으로 설정했습니다.
+* 승인 전에는 실제 역할을 부여하지 않고 신청 역할과 승인 후 역할을 분리했습니다.
+* 승인 또는 거절 시 처리자 ID와 처리 시각을 기록하고, 거절 시 사유를 함께 저장했습니다.
+
+### 2. 역할과 소속을 반영한 가입 승인·거절
+* Master는 모든 가입 신청을 심사할 수 있도록 구성했습니다.
+* Hub Manager는 자신의 허브와 동일한 허브에 속한 신청만 심사할 수 있도록 검증했습니다.
+* 특정 허브에 소속되지 않는 허브 배송 담당자 신청은 Master만 심사할 수 있도록 제한했습니다.
+* 승인·거절 결과는 OpenFeign 내부 API를 통해 Auth Service의 인증 계정에도 반영했습니다.
+
+### 3. 배송 담당자 자동 생성 및 순번 관리
+* 배송 담당자 가입 신청이 승인되면 User와 동일한 ID의 DeliveryManager를 생성했습니다.
+* 허브 배송 담당자는 특정 허브에 소속되지 않도록 hubId를 비워 두고 전체 기준 배송 순번을 부여했습니다.
+* 업체 배송 담당자는 소속 허브를 필수로 하며 허브별 배송 순번을 부여했습니다.
+* 현재 최대 배송 순번을 조회한 뒤 다음 순번을 계산해 저장하도록 구현했습니다.
+
+
+---
+
+## 💡 기술적 고민 및 해결
+
+### 서로 다른 배송 담당자 유형을 하나의 조회 흐름으로 처리하는 방법
+
+**문제**
+
+* 허브 배송 담당자는 특정 허브에 소속되지 않지만, 업체 배송 담당자는 반드시 허브에 소속되어야 합니다.
+
+**해결**
+
+* 배송 담당자 유형을 HUB_DELIVERY와 COMPANY_DELIVERY로 구분하고 생성 규칙을 각각 적용했습니다.
+
+**결과**
+
+* 배송 유형별 소속 규칙을 유지하면서 하나의 페이징 API로 배송 담당자 목록을 조회할 수 있게 되었습니다.
+
+---
+
+## 🚀 실행 방법
+
 ```bash
 ./gradlew bootRun
 ```
 
-### Swagger API 문서
-애플리케이션 실행 후 접속 URL:
-- **Swagger UI**: `http://localhost:8080/api/api-docs`
-- **OpenAPI Spec**: `http://localhost:8080/api/api-spec`
+필요한 환경 변수 및 외부 인프라 설정은 프로젝트 공통 README를 참고해주세요.
+
+---
+
+## 🔗 Project
+
+전체 프로젝트의 아키텍처, ERD, 서비스 구성 및 팀원 역할은 Organization README에서 확인할 수 있습니다.
+
+👉 [Baekma Logistics](Organization README URL)(제가 README 추가 후에 수정해 놓겠습니다!)
