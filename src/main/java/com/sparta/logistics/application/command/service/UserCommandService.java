@@ -2,8 +2,10 @@ package com.sparta.logistics.application.command.service;
 
 import com.sparta.logistics.application.command.dto.ApproveUserCommand;
 import com.sparta.logistics.application.command.dto.CreatePendingUserCommand;
+import com.sparta.logistics.application.command.dto.RejectUserCommand;
 import com.sparta.logistics.application.command.usecase.ApproveUserUseCase;
 import com.sparta.logistics.application.command.usecase.CreatePendingUserUseCase;
+import com.sparta.logistics.application.command.usecase.RejectUserUseCase;
 import com.sparta.logistics.domain.entity.DeliveryManager;
 import com.sparta.logistics.domain.entity.User;
 import com.sparta.logistics.domain.model.DeliveryManagerType;
@@ -27,7 +29,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserCommandService implements
     CreatePendingUserUseCase,
-    ApproveUserUseCase
+    ApproveUserUseCase,
+    RejectUserUseCase
 
 {
 
@@ -66,12 +69,16 @@ public class UserCommandService implements
   @Override
   public void approveUser(ApproveUserCommand command) {
 
-    User targetUser = userRepository.findById(command.userId())
+    User targetUser = userRepository.findByIdAndDeletedAtIsNull(command.userId())
         .orElseThrow(() ->
             new ApiException(ErrorResponseCode.USER_NOT_FOUND));
 
     // 승인 권한 검사
-    validateApprovalAuthority(command, targetUser);
+    validateApprovalAuthority(
+        command.reviewerId(),
+        command.reviewerRole(),
+        targetUser
+    );
 
     DeliveryManager deliveryManager = null;
 
@@ -81,11 +88,12 @@ public class UserCommandService implements
     }
 
     // PENDING 상태 확인 및 Role변경
-    targetUser.approve();
+    targetUser.approve(command.reviewerId());
 
     if (deliveryManager != null) {
       deliveryManagerRepository.save(deliveryManager);
     }
+
 
     authServiceClient.activateAccount(
         targetUser.getId(),
@@ -93,17 +101,45 @@ public class UserCommandService implements
     );
   }
 
+  // 회원가입 거절
+  @Override
+  public void rejectUser(RejectUserCommand command) {
+
+    User targetUser = userRepository.findByIdAndDeletedAtIsNull(command.userId())
+        .orElseThrow(() ->
+            new ApiException(ErrorResponseCode.USER_NOT_FOUND));
+
+    // 승인 권한 검사
+    validateApprovalAuthority(
+        command.reviewerId(),
+        command.reviewerRole(),
+        targetUser
+    );
+
+    targetUser.reject(
+        command.reason(),
+        command.reviewerId()
+    );
+
+    authServiceClient.rejectAccount(targetUser.getId());
+
+  }
+
 
   // 승인 권한 검사
-  private void validateApprovalAuthority(ApproveUserCommand command, User targetUser) {
+  private void validateApprovalAuthority(
+      UUID reviewerId,
+      Role reviewerRole,
+      User targetUser
+  ) {
 
     // 마스터 관리자는 모든 가입 신청 승인 가능
-    if (command.reviewerRole() == Role.MASTER) {
+    if (reviewerRole == Role.MASTER) {
       return;
     }
 
     // 허브 관리자가 아니면 가입 신청 승인 불가
-    if (command.reviewerRole() != Role.HUB_MANAGER) {
+    if (reviewerRole != Role.HUB_MANAGER) {
       throw new ApiException(ErrorResponseCode.USER_APPROVAL_FORBIDDEN);
     }
 
@@ -115,7 +151,7 @@ public class UserCommandService implements
       throw new ApiException(ErrorResponseCode.USER_APPROVAL_FORBIDDEN);
     }
 
-    User reviewer = userRepository.findById(command.reviewerId())
+    User reviewer = userRepository.findByIdAndDeletedAtIsNull(reviewerId)
         .orElseThrow(() ->
             new ApiException(ErrorResponseCode.USER_NOT_FOUND));
 
@@ -247,4 +283,6 @@ public class UserCommandService implements
 
     return maxOrder + 1;
   }
+
+
 }

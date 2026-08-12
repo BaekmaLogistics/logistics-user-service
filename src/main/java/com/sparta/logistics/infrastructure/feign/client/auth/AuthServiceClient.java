@@ -18,4 +18,9 @@ public interface AuthServiceClient {
       @PathVariable UUID userId,
       @RequestBody ActivateAuthAccountRequest activateAuthAccountRequest
   );
+
+  @PatchMapping("/internal/api/v1/auth/accounts/{userId}/reject")
+  void rejectAccount(
+      @PathVariable UUID userId
+  );
 }
