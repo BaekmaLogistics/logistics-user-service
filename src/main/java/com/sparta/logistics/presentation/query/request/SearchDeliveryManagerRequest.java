@@ -9,7 +9,7 @@ import java.util.UUID;
 public record SearchDeliveryManagerRequest(
 
     @NotNull(message = "배송 유형은 필수입니다.")
-    DeliveryManagerType deliveryManagerType,
+    DeliveryManagerType deliveryType,
 
     UUID hubId,
 
@@ -25,7 +25,7 @@ public record SearchDeliveryManagerRequest(
 
   public SearchDeliveryManagerQuery toQuery() {
     return new SearchDeliveryManagerQuery(
-        deliveryManagerType,
+        deliveryType,
         hubId,
         page,
         size

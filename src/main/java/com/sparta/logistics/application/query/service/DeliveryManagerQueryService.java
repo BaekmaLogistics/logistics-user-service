@@ -25,7 +25,7 @@ public class DeliveryManagerQueryService implements SearchDeliveryManagerUseCase
     validateQuery(query);
 
     Page<DeliveryManagerItem> responses = deliveryManagerQueryRepository.search(
-        query.deliveryManagerType(),
+        query.deliveryType(),
         query.hubId(),
         query.toPageable()
     );
@@ -35,7 +35,7 @@ public class DeliveryManagerQueryService implements SearchDeliveryManagerUseCase
 
   // 업체 배송 담당자는 소속 허브 필요
   private void validateQuery(SearchDeliveryManagerQuery query) {
-    if (query.deliveryManagerType()
+    if (query.deliveryType()
         == DeliveryManagerType.COMPANY_DELIVERY
         && query.hubId() == null) {
       throw new ApiException(

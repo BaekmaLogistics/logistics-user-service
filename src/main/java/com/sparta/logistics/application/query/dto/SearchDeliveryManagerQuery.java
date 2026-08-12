@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public record SearchDeliveryManagerQuery(
 
-    DeliveryManagerType deliveryManagerType,
+    DeliveryManagerType deliveryType,
     UUID hubId,
     Integer page,
     Integer size
