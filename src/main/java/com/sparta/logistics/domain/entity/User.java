@@ -12,6 +12,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -49,14 +50,23 @@ public class User extends BaseAssignedIdUpdatableEntity {
   @Column(name = "company_id")
   private UUID companyId;
 
-  private User (
-          UUID id,
-          String name,
-          String slackId,
-          RequestedRole requestedRole,
-          RequestedDeliveryType requestedDeliveryType,
-          UUID hubId,
-          UUID companyId
+  @Column(length = 255)
+  private String rejectionReason;
+
+  @Column(name = "reviewed_by")
+  private UUID reviewedBy;
+
+  @Column(name = "reviewed_at")
+  private Instant reviewedAt;
+
+  private User(
+      UUID id,
+      String name,
+      String slackId,
+      RequestedRole requestedRole,
+      RequestedDeliveryType requestedDeliveryType,
+      UUID hubId,
+      UUID companyId
   ) {
 
     this.id = id;
@@ -93,8 +103,8 @@ public class User extends BaseAssignedIdUpdatableEntity {
     );
   }
 
-  public void approve() {
-
+  public void approve(UUID reviewerId) {
+    validatePendingStatus();
     //승인, 거절이 완료되었는지 확인
     if (this.approvalStatus != ApprovalStatus.PENDING) {
       throw new ApiException(ErrorResponseCode.ALREADY_REVIEWED_USER);
@@ -108,5 +118,26 @@ public class User extends BaseAssignedIdUpdatableEntity {
     };
 
     this.approvalStatus = ApprovalStatus.APPROVED;
+    this.rejectionReason = null;
+    this.reviewedBy = reviewerId;
+    this.reviewedAt = Instant.now();
+  }
+
+  // 승인 거절
+  public void reject(String reason, UUID reviewedBy) {
+    validatePendingStatus();
+
+    this.role = null;
+    this.approvalStatus = ApprovalStatus.REJECTED;
+    this.rejectionReason = reason;
+    this.reviewedBy = reviewedBy;
+    this.reviewedAt = Instant.now();
+  }
+
+  // PENDING이 아니면 오류
+  private void validatePendingStatus() {
+    if (this.approvalStatus != ApprovalStatus.PENDING) {
+      throw new ApiException(ErrorResponseCode.ALREADY_REVIEWED_USER);
+    }
   }
 }
