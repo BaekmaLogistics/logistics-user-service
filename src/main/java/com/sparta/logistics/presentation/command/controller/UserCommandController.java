@@ -1,14 +1,11 @@
 package com.sparta.logistics.presentation.command.controller;
 
 import com.sparta.logistics.application.command.dto.ApproveUserCommand;
-import com.sparta.logistics.application.command.dto.RejectUserCommand;
 import com.sparta.logistics.application.command.usecase.ApproveUserUseCase;
 import com.sparta.logistics.application.command.usecase.RejectUserUseCase;
 import com.sparta.logistics.common.code.GeneralResponseCode;
-import com.sparta.logistics.domain.model.Role;
 import com.sparta.logistics.infrastructure.security.GatewayUserPrincipal;
 import com.sparta.logistics.presentation.command.request.RejectUserRequest;
-import com.sparta.logistics.presentation.common.constant.HeaderConstants;
 import com.sparta.logistics.presentation.common.dto.response.GeneralResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

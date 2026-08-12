@@ -12,4 +12,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   List<User> findAllByIdInAndApprovalStatusAndDeletedAtIsNull(List<UUID> list, ApprovalStatus approvalStatus);
 
   Optional<User> findByIdAndDeletedAtIsNull(UUID uuid);
+
+  Optional<User> findByIdAndApprovalStatusAndDeletedAtIsNull(UUID userId, ApprovalStatus approvalStatus);
 }
