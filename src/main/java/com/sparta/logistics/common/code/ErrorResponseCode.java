@@ -18,7 +18,9 @@ public enum ErrorResponseCode implements ApiResponseCode {
     USER_APPROVAL_FORBIDDEN(HttpStatus.FORBIDDEN, "USER_0004", "해당 사용자의 가입을 승인할 권한이 없습니다."),
     DUPLICATE_DELIVERY_MANAGER(HttpStatus.CONFLICT, "USER_0005", "이미 생성된 배송 담당자입니다"),
     DELIVERY_MANAGER_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "USER_0006", "배송 담당자 최대 인원을 초과했습니다."),
-    DELIVERY_MANAGER_HUB_REQUIRED(HttpStatus.BAD_REQUEST, "USER_0007", "업체 배송 담당자는 소속 허브가 필요합니다.");
+    DELIVERY_MANAGER_HUB_REQUIRED(HttpStatus.BAD_REQUEST, "USER_0007", "업체 배송 담당자는 소속 허브가 필요합니다."),
+
+    USER_APPLICATION_READ_FORBIDDEN(HttpStatus.FORBIDDEN, "USER_0008", "가입 신청 목록을 조회할 권한이 없습니다.");
 
     private final HttpStatus status;
     private final String errorCode;
