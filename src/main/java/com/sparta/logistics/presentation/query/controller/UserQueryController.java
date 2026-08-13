@@ -1,8 +1,10 @@
 package com.sparta.logistics.presentation.query.controller;
 
 import com.sparta.logistics.application.query.dto.GetUserApplicationsQuery;
+import com.sparta.logistics.application.query.dto.MyUserResponse;
 import com.sparta.logistics.application.query.dto.UserApplicationPageResponse;
 import com.sparta.logistics.application.query.usecase.GetUserApplicationsUseCase;
+import com.sparta.logistics.application.query.usecase.GetUserUseCase;
 import com.sparta.logistics.common.code.GeneralResponseCode;
 import com.sparta.logistics.infrastructure.security.GatewayUserPrincipal;
 import com.sparta.logistics.presentation.common.dto.response.GeneralResponse;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserQueryController {
 
   private final GetUserApplicationsUseCase getUserApplicationsUseCase;
+  private final GetUserUseCase getUserUseCase;
 
   @GetMapping("/signup-applications")
   @PreAuthorize("hasAnyRole('MASTER', 'HUB_MANAGER')")
@@ -35,7 +38,7 @@ public class UserQueryController {
           direction = Sort.Direction.DESC
       )
       Pageable pageable
-      ) {
+  ) {
 
     GetUserApplicationsQuery query =
         new GetUserApplicationsQuery(
@@ -47,6 +50,19 @@ public class UserQueryController {
     UserApplicationPageResponse response =
         getUserApplicationsUseCase.getUserApplications(query);
 
+    return GeneralResponse.toResponseEntity(
+        GeneralResponseCode.OK,
+        response
+    );
+  }
+
+
+  @GetMapping("/me")
+  public ResponseEntity<GeneralResponse<MyUserResponse>> getMyUser(
+      @AuthenticationPrincipal GatewayUserPrincipal principal
+  ) {
+
+    MyUserResponse response = getUserUseCase.getMyUser(principal.userId());
     return GeneralResponse.toResponseEntity(
         GeneralResponseCode.OK,
         response

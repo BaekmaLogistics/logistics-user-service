@@ -3,6 +3,7 @@ package com.sparta.logistics.application.query.service;
 import com.sparta.logistics.application.query.dto.*;
 import com.sparta.logistics.application.query.usecase.GetUserAccessUseCase;
 import com.sparta.logistics.application.query.usecase.GetUserApplicationsUseCase;
+import com.sparta.logistics.application.query.usecase.GetUserUseCase;
 import com.sparta.logistics.application.query.usecase.SearchUserUseCase;
 import com.sparta.logistics.common.code.ErrorResponseCode;
 import com.sparta.logistics.common.exception.ApiException;
@@ -24,7 +25,8 @@ import java.util.UUID;
 public class UserQueryService implements
     SearchUserUseCase,
     GetUserAccessUseCase,
-    GetUserApplicationsUseCase
+    GetUserApplicationsUseCase,
+    GetUserUseCase
 {
 
   private final UserRepository userRepository;
@@ -65,10 +67,24 @@ public class UserQueryService implements
       default -> throw new ApiException(ErrorResponseCode.USER_APPLICATION_READ_FORBIDDEN);
     };
 
-
     return UserApplicationPageResponse.from(
         applications.map(UserApplicationItem::from)
     );
+  }
+
+  // 내 정보 조회
+  @Override
+  public MyUserResponse getMyUser(UUID userId) {
+    User user = userRepository
+        .findByIdAndApprovalStatusAndDeletedAtIsNull(
+            userId,
+            ApprovalStatus.APPROVED
+        )
+        .orElseThrow(() ->
+            new ApiException(ErrorResponseCode.USER_NOT_FOUND)
+        );
+
+    return MyUserResponse.from(user);
   }
 
   // 회원가입 목록 조회(관리자)
