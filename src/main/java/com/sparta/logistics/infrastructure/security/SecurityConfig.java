@@ -40,6 +40,14 @@ public class SecurityConfig {
                 "/internal/api/v1/users/signup"
             ).permitAll()
 
+
+            .requestMatchers(
+                "/api/api-docs",
+                "/api/api-spec",
+                "/api/my-docs",
+                "/api/swagger-ui/**"
+            ).permitAll()
+
             .anyRequest().authenticated()
         )
 
