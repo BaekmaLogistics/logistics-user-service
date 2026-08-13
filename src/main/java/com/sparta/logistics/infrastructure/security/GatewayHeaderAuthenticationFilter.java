@@ -31,7 +31,12 @@ public class GatewayHeaderAuthenticationFilter extends OncePerRequestFilter {
     }
 
     UUID userId = UUID.fromString(userIdHeader);
-    Role role = Role.valueOf(roleHeader);
+
+    String normalizedRole = roleHeader.startsWith("ROLE_")
+        ? roleHeader.substring("ROLE_".length())
+        : roleHeader;
+
+    Role role = Role.valueOf(normalizedRole);
 
     GatewayUserPrincipal userPrincipal =
         new GatewayUserPrincipal(userId, role);
