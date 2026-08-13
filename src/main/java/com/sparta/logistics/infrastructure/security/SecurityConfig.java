@@ -37,9 +37,16 @@ public class SecurityConfig {
 
             .requestMatchers(
                 HttpMethod.POST,
-                "/internal/api/v1/users/signup"
+                "/internal/api/v1/users/signup",
+                "/internal/api/v1/users/search"
+
             ).permitAll()
 
+            .requestMatchers(
+                HttpMethod.GET,
+                "/internal/api/v1/delivery-managers",
+                "/internal/api/v1/users/{userId}"
+            ).permitAll()
 
             .requestMatchers(
                 "/api/api-docs",
